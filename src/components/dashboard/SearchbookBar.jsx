@@ -9,6 +9,11 @@ const SearchbookBar = ({onSubmit}) => {
     e.preventDefault()
     console.log(userInput);
     onSubmit()
+    //todo
+    //send the input to backend
+    //response data to book list component 
+    //save in the state like data for profile
+    // do the same for db user 
     
   }
   return (

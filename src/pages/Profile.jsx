@@ -18,6 +18,8 @@ const Profile = () => {
   const { data: books, isLoading ,isError, error} = useQuery({
     queryKey: ["booksByCurrentUser"],
     queryFn: async () => {
+      // console.log("data fetched ");
+      
       const token = await user.getIdToken();
        const response = await api.get("/book/currentUser", {
         headers: { Authorization: `Bearer ${token}` },
@@ -27,7 +29,7 @@ const Profile = () => {
     enabled:!!user,
     refetchOnMount: false,
   });
-  console.log("data by tanstack : ", books, isLoading);
+  // console.log("data by tanstack : ", books, isLoading);
 
   const {
     aboutMe,
