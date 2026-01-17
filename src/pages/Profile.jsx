@@ -13,23 +13,23 @@ const Profile = () => {
   const { dbUser } = useUserContext();
   const [selectedBook, setSelectedBook] = useState(null);
 
- 
-
-  const { data: books, isLoading ,isError, error} = useQuery({
+  const {
+    data: books,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["booksByCurrentUser"],
     queryFn: async () => {
-      // console.log("data fetched ");
-      
       const token = await user.getIdToken();
-       const response = await api.get("/book/currentUser", {
+      const response = await api.get("/book/currentUser", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      return response.data
+      return response.data;
     },
-    enabled:!!user,
+    enabled: !!user,
     refetchOnMount: false,
   });
-  // console.log("data by tanstack : ", books, isLoading);
 
   const {
     aboutMe,
@@ -42,7 +42,6 @@ const Profile = () => {
 
   const { street, city, state, pincode, country } = address;
   const { instagram, website, twitter } = socialLinks;
-  // console.log("dbuser in profile: ",profilePhotoURL);
 
   return (
     <>
@@ -63,22 +62,23 @@ const Profile = () => {
           <div className="left-container lg:p-8 mr-4 w-full max-md:order-2">
             <h1 className="text-center mb-8  text-2xl">Book listed </h1>
             <div className="grid  grid-cols-3 max-sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {books?.map((book)=>
-                  <BookCard key={book._id} book={book} onOpen={() => setSelectedBook(book)}/>
-              )}
-              {
-              books?.length<1 && <div>no books listed</div>}
+              {books?.map((book) => (
+                <BookCard
+                  key={book._id}
+                  book={book}
+                  onOpen={() => setSelectedBook(book)}
+                />
+              ))}
+              {books?.length < 1 && <div>no books listed</div>}
             </div>
           </div>
           {/* The Modal Component */}
-      {selectedBook && (
-        <BookModal
-          book={selectedBook} 
-          onClose={() => setSelectedBook(null)} 
-        />
-      )}
-   
-          
+          {selectedBook && (
+            <BookModal
+              book={selectedBook}
+              onClose={() => setSelectedBook(null)}
+            />
+          )}
 
           <div className="card flex flex-col  md:w-1/3  w-full max-md:order-1">
             <Link

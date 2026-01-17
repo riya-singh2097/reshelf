@@ -6,15 +6,18 @@ import router from "./routes/router.jsx"
 import { FirebaseProvider } from './context/FirebaseContext.jsx'
 import { UserContextProvider } from './context/UserContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
-
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+const queryClient = new QueryClient(); 
 createRoot(document.getElementById('root')).render(
   // <StrictMode>
   <ThemeProvider>
+    <QueryClientProvider client={queryClient}>
     <FirebaseProvider>
       <UserContextProvider>
         <RouterProvider router={router} />
       </UserContextProvider>
     </FirebaseProvider>
+    </QueryClientProvider>
   </ThemeProvider>
   // </StrictMode>
 )

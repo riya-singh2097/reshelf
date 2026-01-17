@@ -1,61 +1,52 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import api from "../lib/axios.js";
+import { createContext, useContext } from "react";
 import { useFirebase } from "./FirebaseContext.jsx";
-import { toast } from "react-toastify";
+import { useQuery } from "@tanstack/react-query";
+import api from "../lib/axios.js";
 
 const UserContext = createContext(null);
 
 export const UserContextProvider = ({ children }) => {
   const { user, loading: authLoading } = useFirebase();
-  const [dbUser, setDbUser] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  const fetchDbUser = async () => {
-    if (!user) return;
-    setLoading(true);
-    if (user.emailVerified){
-       try {
+  const {
+    data: dbUser,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["dbUser", user?.uid],
+    queryFn: async () => {
+      try {
         const token = await user.getIdToken();
         const res = await api.get("/user/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
-          
-        setDbUser(res.data);
-        // console.log("response : " ,res.data, "dbuser in context: ",dbUser);
-        //todo => use tanstack for saving user in db and use mutation when info edited
-        
+        return res.data;
       } catch (error) {
-        //error via response
-        if (error.response) {
-          if (error.response.status === 404) {
-            setDbUser({ isNew: true });
-          } else {
-            toast.error("Server Error. Please try again later.");
-            setDbUser(null);
-          }
-        } else if (error.request) {
-          console.error("Network error: Backend is down");
-          toast.error(
-            "Server is unreachable. Please check your internet or try again later.",
-            {
-              toastId: "network-error", // Prevents duplicate toasts
-            }
-          );
-          setDbUser({ isServerError : true, error: "SERVER_DOWN" });
+        if (error.response?.status === 404) {
+          return { isNew: true };
         }
-      } finally {
-        setLoading(false);
+        throw error;
       }
-    }
-     
-  };
-
-  useEffect(() => {
-    if (!authLoading) fetchDbUser();
-  }, [user, authLoading]);
+    },
+    enabled: !!user && !authLoading, //fetch only when user is loaded
+    retry: 1, // retry once if fails
+    staleTime: Infinity, // Data never becomes "old" on its own
+    refetchOnMount: false, // Don't fetch when navigating to a new page
+    gcTime: 1000 * 60 * 60, // Keep in cache for 1 hour even if not used By default, if a query is not being used by any visible component for 5 minutes, it deletes the data from memory to save RAM.
+  });
 
   return (
-    <UserContext.Provider value={{ dbUser, loading, refreshUser: fetchDbUser }}>
+    <UserContext.Provider
+      value={{
+        dbUser,
+        loading: isLoading || authLoading,
+        isError,
+        error,
+        refreshUser: refetch,
+      }}
+    >
       {children}
     </UserContext.Provider>
   );

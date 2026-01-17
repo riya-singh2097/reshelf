@@ -6,26 +6,47 @@ import api from "../lib/axios.js";
 import { statesNDistricts } from "../lib/location.js";
 import { toast } from "react-toastify";
 import { uploadImage } from "../lib/cloudinary/uploadImage.js";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const UpdateProfile = () => {
   const { user } = useFirebase();
-  const { dbUser,refreshUser } = useUserContext();
-    const navigate = useNavigate();
-  
+  const { dbUser } = useUserContext();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [loading, setLoading] = useState(false);
   const [districts, setDistricts] = useState([]);
   const [imageFile, setImageFile] = useState("");
-  const [userName, setUserName] = useState(dbUser.username);
-  const [aboutMe, setAboutMe] = useState(dbUser.aboutMe);
-  const [imagePreview, setImagePreview] = useState(dbUser.profilePhotoURL);
-  const [address, setAddress] = useState(dbUser.address);
-  const [socialLinks, setSocialLinks] = useState(dbUser.socialLinks);
+  const [userName, setUserName] = useState(dbUser?.username || "");
+  const [aboutMe, setAboutMe] = useState(dbUser?.aboutMe || "");
+  const [imagePreview, setImagePreview] = useState(
+    dbUser?.profilePhotoURL || ""
+  );
+  const [address, setAddress] = useState(
+    dbUser?.address || { street: "", state: "", district: "", pincode: "" }
+  );
+  const [socialLinks, setSocialLinks] = useState(
+    dbUser?.socialLinks || { instagram: "", twitter: "", website: "" }
+  );
+
+  const { mutateAsync: updateProfile, isPending } = useMutation({
+    mutationFn: async (profileData) => {
+      const token = await user.getIdToken();
+      return api.put("/user/profile/update", profileData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["dbUser", user?.uid] });
+      toast.success("Profile updated!");
+      navigate("/dashboard");
+    },
+  });
 
   const handleProfileImgPreview = (e) => {
     const file = e.target.files[0];
     // console.log(file, "file in handleProfileImgPreview");//just some infor in obj form
-    setImageFile(file);//save this for the Cloudinary upload later
+    setImageFile(file); //save this for the Cloudinary upload later
     setImagePreview(URL.createObjectURL(file));
   };
 
@@ -63,11 +84,11 @@ const UpdateProfile = () => {
       //uplaoding image to cloudinary and get the link
       setLoading(true);
       //upload avatar to cloudinary
-      let finalImageUrl = user?.photoURL; // Default to existing
+      let finalImageUrl = dbUser?.profilePhotoURL;
 
       // 1. Upload if user picked a new file
       if (imageFile) {
-        const uploadedUrl = await  uploadImage(imageFile, 'avatar');
+        const uploadedUrl = await uploadImage(imageFile, "avatar");
         if (uploadedUrl) finalImageUrl = uploadedUrl;
       }
 
@@ -77,22 +98,16 @@ const UpdateProfile = () => {
           "https://i.pinimg.com/736x/79/e8/9f/79e89fdc173fed118526a1d32e1aac61.jpg";
       }
 
-      const token = await user.getIdToken();
-      const result = await api.put(
-        "/user/profile/update",{      profilePhotoURL: finalImageUrl,
+      await updateProfile({
+        profilePhotoURL: finalImageUrl,
         username: userName,
         address,
         socialLinks,
-        aboutMe,},{headers: { Authorization: `Bearer ${token}` },});
-      // ..send uis here or verify middlevare se lelega
-      console.log("result from update : ",result);
-      
-      toast.success("updated");
-      await refreshUser();
-      navigate("/dashboard");
+        aboutMe,
+      });
     } catch (error) {
-      console.log(error);
-      toast.error(error.message)
+      console.error(error);
+      toast.error(error.response?.data?.message || "Something went wrong");
     }
   };
 
@@ -255,9 +270,9 @@ const UpdateProfile = () => {
               <button
                 type="submit"
                 className="btn btn-secondary w-full"
-                disabled={loading}
+                disabled={loading || isPending}
               >
-                {loading ? "Saving..." : "Complete Profile"}
+                {loading || isPending ? "Saving..." : "Complete Profile"}
               </button>
             </div>
           </div>

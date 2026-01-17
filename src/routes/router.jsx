@@ -18,17 +18,13 @@ const UpdateProfile = lazy(() => import("../pages/UpdateProfile.jsx"));
 const VerifyEmailInstructionsPage = lazy(() =>
   import("../components/VerifyEmailInstructionsPage.jsx")
 );
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: (
-      <QueryClientProvider client={queryClient}>
         <App />
-      </QueryClientProvider>
     ),
     children: [
       {
