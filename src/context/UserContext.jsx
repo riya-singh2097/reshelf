@@ -41,7 +41,7 @@ export const UserContextProvider = ({ children }) => {
               toastId: "network-error", // Prevents duplicate toasts
             }
           );
-          setDbUser(null);
+          setDbUser({ isServerError : true, error: "SERVER_DOWN" });
         }
       } finally {
         setLoading(false);

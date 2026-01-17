@@ -4,6 +4,8 @@ import { useState } from "react";
 const SearchbookBar = ({onSubmit}) => {
 
   const [userInput, setUserInput] = useState('')
+  console.log(userInput);
+  
 
   function handleSearchBook(e){
     e.preventDefault()

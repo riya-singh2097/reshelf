@@ -3,10 +3,10 @@
 // //toast implementation 
 // // emailverification
 // // password reset 
-//1. BOOK api - 
-// save books (generating unique id for each book listed)
+////1. BOOK api - 
+//// save books (generating unique id for each book listed)
 // get specific book
-// gets books for search result in json  
+//// gets books for search result in json  
 // updat profile use the firebase thing once but also the dbuser update ----- figure out profile update thing its not urgent 
 // search result 
 
@@ -471,4 +471,6 @@ Resilience: If a user refreshes the page on /complete-profile, the app doesn't b
 
 No "Flicker": Using a dedicated loading state for both Auth and DB prevents that weird split-second where the app shows the Landing Page before realizing the user is logged in.
 
-Would you like me to show you how to structure the Backend "Get Info" route to be more professional?*/
+Would you 
+like me to show you how to structure the Backend "Get Info" route to be more professional?*/
+
