@@ -16,18 +16,15 @@ const BooksSearchResult = ({ books = [] }) => {
               key={book._id}
               className="flex items-center justify-between bg-base-100 p-4 rounded-xl shadow hover:bg-base-200 transition"
             >
-              {/* LEFT SIDE */}
               <div
                 className="flex items-center gap-4 cursor-pointer"
               >
-                {/* Book Image */}
                 <img
                   src={book.bookCover || "/book-placeholder.png"}
                   alt={book.bookTitle}
                   className="w-16 h-20 object-cover rounded-md"
                 />
 
-                {/* Book Info */}
                 <div>
                   <h3 className="font-semibold text-base">
                     {book.bookTitle}

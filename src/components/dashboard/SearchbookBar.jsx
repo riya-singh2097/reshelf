@@ -30,9 +30,12 @@ function handleChange(e){
 }
   function handleSearchBook(e){
     e.preventDefault()
-   if (userInput.length > 0) {
-    debouncedSearch(userInput)
-  }}
+    if (userInput.trim().length === 0) {
+    onSubmit("");
+    return;
+  }
+  debouncedSearch(userInput)
+}
   return (
     <div>
       <div className="search-bar p-4 ">

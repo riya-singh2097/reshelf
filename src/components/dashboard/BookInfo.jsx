@@ -12,10 +12,8 @@ const BookInfo = ({ book, onClose }) => {
           ✕
         </button>
 
-        {/* Main Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 md:gap-x-10">
           
-          {/* IMAGE AREA */}
           <div className="md:col-span-1 flex flex-col items-center">
             <div className="w-full aspect-[3/4] overflow-hidden rounded-xl shadow-2xl bg-base-200">
               <img
@@ -40,7 +38,6 @@ const BookInfo = ({ book, onClose }) => {
             </button>
           </div>
 
-          {/* HEADER & SPECS */}
           <div className="md:col-span-2 min-w-0 mt-6 md:mt-0">
             <h3 className="font-bold text-3xl md:text-4xl leading-tight break-words">
               {book.bookTitle}
