@@ -6,13 +6,6 @@ import { useFirebase } from "../context/FirebaseContext"
 
 
 const LandingPage = () => {
-console.log("landing page ");
-// const {user}= useFirebase()
-// console.log("user in landing page", user);
-// const navigate = useNavigate();
-// if(user) navigate("/dashboard")
-
-
     return (
         <>  
             <Outlet/> 

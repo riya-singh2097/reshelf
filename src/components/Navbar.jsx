@@ -1,5 +1,5 @@
 import { Library } from "lucide-react";
-import { useEffect, useState } from "react";
+import BNWprofile from "../assets/bnwprofile.webp"
 import { Link } from "react-router";
 import { useFirebase } from "../context/FirebaseContext.jsx";
 import { useUserContext } from "../context/UserContext.jsx";
@@ -80,12 +80,12 @@ const Navbar = () => {
         </div>
                   ):(
                     <img
-                      src={dbUser?.profilePhotoURL??"https://i.pinimg.com/736x/79/e8/9f/79e89fdc173fed118526a1d32e1aac61.jpg"}
+                      src={dbUser?.profilePhotoURL??BNWprofile}
                       alt="User Profile"
                       className="w-full h-full object-cover"
                     />
                   ) ):  <img
-                      src={dbUser?.profilePhotoURL??"https://i.pinimg.com/736x/79/e8/9f/79e89fdc173fed118526a1d32e1aac61.jpg"}
+                      src={dbUser?.profilePhotoURL??BNWprofile}
                       alt="User Profile"
                       className="w-full h-full object-cover"
                     />}

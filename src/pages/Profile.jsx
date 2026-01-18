@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import api from "../lib/axios.js";
 import BookModal from "../components/BookModal.jsx";
 import { useState } from "react";
+import Loading from "../components/Loading.jsx";
 
 const Profile = () => {
   const { user, logout } = useFirebase();
@@ -45,7 +46,7 @@ const Profile = () => {
 
   return (
     <>
-      <section className="p-8 h-full">
+      <section className="p-8 ">
         <div className="breadcrumbs text-sm mb-4">
           <ul>
             <li>
@@ -61,16 +62,27 @@ const Profile = () => {
         <div className="flex md:justify-between md:flex-row flex-col md:p-4 ">
           <div className="left-container lg:p-8 mr-4 w-full max-md:order-2">
             <h1 className="text-center mb-8  text-2xl">Book listed </h1>
-            <div className="grid  grid-cols-3 max-sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {books?.map((book) => (
-                <BookCard
-                  key={book._id}
-                  book={book}
-                  onOpen={() => setSelectedBook(book)}
-                />
-              ))}
-              {books?.length < 1 && <div>no books listed</div>}
-            </div>
+            {isError && (
+              <div className="error">
+                <div role="alert" className="alert alert-error alert-outline">
+                  <span>{error}</span>
+                </div>
+              </div>
+            )}
+            {isLoading ? (
+              <Loading />
+            ) : (
+              <div className="grid  grid-cols-3 max-sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {books?.map((book) => (
+                  <BookCard
+                    key={book._id}
+                    book={book}
+                    onOpen={() => setSelectedBook(book)}
+                  />
+                ))}
+                {books?.length < 1 && <div>no books listed</div>}
+              </div>
+            )}
           </div>
           {/* The Modal Component */}
           {selectedBook && (

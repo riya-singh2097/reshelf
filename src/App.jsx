@@ -10,7 +10,8 @@ function App() {
   return (
 
     <>
-      <Navbar/>
+     <div className='min-h-screen flex flex-col'>
+       <Navbar/>
       <main >
         {loading?<Loading/>:<Outlet/>}
       </main>
@@ -20,6 +21,7 @@ function App() {
        autoClose={3000} />
       <Footer/>
 
+     </div>
     </>
   )
 }
