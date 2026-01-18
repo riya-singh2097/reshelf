@@ -22,9 +22,11 @@ function handleChange(e){
     console.log(value);
    setUserInput(value);
 
-  if (value.trim().length > 0) {
-    debouncedSearch(value);
+  if (value.trim().length === 0) {
+    onSubmit("")
+    return ;
   }
+  debouncedSearch(value);
 }
   function handleSearchBook(e){
     e.preventDefault()
