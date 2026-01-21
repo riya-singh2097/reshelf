@@ -31,11 +31,11 @@ const BooksSearchResult = ({ books = [] }) => {
                   </h3>
 
                   <p className="text-sm text-gray-500">
-                    Price: ${book.price} | Distance: {book.distance} miles
+                    Category: {book.category} | Condition: {book.condition}
                   </p>
 
                   <p className="text-sm text-gray-500">
-                    Author: {book.author}
+                    Author: {book.bookAuthor}
                   </p>
                 </div>
               </div>
