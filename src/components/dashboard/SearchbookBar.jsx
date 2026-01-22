@@ -6,35 +6,38 @@ const SearchbookBar = ({onSubmit}) => {
 
   const [userInput, setUserInput] = useState('')
   
-  console.log(userInput);
+  // console.log(userInput);
 
   const debouncedSearch  = useDebouncedCallback(
     (value)=>{
-      console.log("sending backend: ",value);
-      onSubmit(value)
+       if(value.trim().length === 0) return
+console.log("valuse sent to dashboard : ",value);
+
+      onSubmit(value.trim())
     },
     500
   )
   
-  //handle onchange 
-function handleChange(e){
-    const value = e.target.value;
-    console.log(value);
-   setUserInput(value);
 
-  if (value.trim().length === 0) {
-    onSubmit("")
-    return ;
+function handleChange(e) {
+  const value = e.target.value;
+  setUserInput(value);
+
+  // If input is empty, call onSubmit with empty string immediately 
+  // to clear results, otherwise debounce the search.
+  if (value.trim() === "") {
+    onSubmit(""); 
+    debouncedSearch.cancel(); // Stop any pending debounced calls
+  } else {
+    debouncedSearch(value);
   }
-  debouncedSearch(value);
 }
-  function handleSearchBook(e){
-    e.preventDefault()
-    if (userInput.trim().length === 0) {
-    onSubmit("");
-    return;
+
+function handleSearchBook(e) {
+  e.preventDefault();
+  if (userInput.trim().length > 0) {
+    debouncedSearch(userInput);
   }
-  debouncedSearch(userInput)
 }
   return (
     <div>

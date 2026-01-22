@@ -3,6 +3,7 @@ import { useState } from "react";
 
 const BooksSearchResult = ({ books = [] }) => {
   const [selectedBook, setSelectedBook] = useState(null);
+console.log("inside search result : ",books.length);
 
   return (
     <>

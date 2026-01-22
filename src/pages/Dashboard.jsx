@@ -11,31 +11,36 @@ const Dashboard = () => {
   const { user } = useFirebase();
   const [bookResult, setBookResult] = useState([])
 
-  async function handleSearch(query) {
-    console.log("inside handle search dashboard");
-    
-    try {
-      const token = await user.getIdToken();
-      const res = await api.get(`/book/${query}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+// Dashboard.jsx
 
-      console.log("res: ",res);
-     if(res.data.data.length > 0){
-       const books = res.data.data
-      console.log("books:", books, typeof books);
+async function handleSearch(query) {
+  // 1. Guard Clause: If query is empty, clear results and stop
+  if (!query || query.trim() === "") {
+    setBookResult([]);
+    return;
+  }
 
-      setBookResult(books)
-     }else{
-      setBookResult([])
-     }
-    } catch (error) {
+  try {
+    const token = await user.getIdToken();
+    const res = await api.get(`/book/${query}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (res.data.data && res.data.data.length > 0) {
+      setBookResult(res.data.data);
+    } else {
+      setBookResult([]);
+    }
+  } catch (error) {
+    // 2. Handle 404 specifically if your backend returns 404 for "not found"
+    if (error.response && error.response.status === 404) {
+      setBookResult([]);
+    } else {
       console.error(error);
-      
       toast.error(error.message);
     }
   }
-
+}
   return (
     <>
       <section>
