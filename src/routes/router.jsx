@@ -1,6 +1,8 @@
 import { lazy } from "react";
 import { createBrowserRouter, Outlet } from "react-router";
 import App from "../App.jsx";
+import SearchPage from "../pages/SearchPage.jsx";
+import OtherUserProfile from "../pages/OtherUserProfile.jsx";
 const AuthGuard = lazy(() => import("./guards/AuthGuard.jsx"));
 const GuestGuard = lazy(() => import("./guards/GuestGuard.jsx"));
 const OnboardingGuard = lazy(() => import("./guards/OnboardingGuard.jsx"));
@@ -57,7 +59,9 @@ const router = createBrowserRouter([
         ),
         children: [
           { path: "/dashboard", element: <Dashboard /> },
+          { path: "/search", element: <SearchPage/> },
           { path: "/profile", element: <Profile /> },
+          { path: "/profile/:id", element: <OtherUserProfile /> },
           { path: "/listbook", element: <ListBook /> },
           { path: "/update-profile", element: <UpdateProfile /> },
         ],

@@ -26,7 +26,7 @@ const FirebaseContext = createContext(null);
 export const FirebaseProvider = (props) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-console.log("user: ",user);
+// console.log("user: ",user);
 
   //register user
   const createUser = async (email, password) =>

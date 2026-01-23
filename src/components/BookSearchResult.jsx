@@ -1,10 +1,9 @@
-import BookInfo from "./BookRequestModal.jsx";
+import BookInfo from "../components/BookRequestModal.jsx";
 import { useState } from "react";
 import { ChevronRight, BookOpen } from "lucide-react";
 
 const BooksSearchResult = ({ books = [] }) => {
   const [selectedBook, setSelectedBook] = useState(null);
-console.log(books[0]);
 
   if (books.length === 0) {
     return (
@@ -23,7 +22,7 @@ console.log(books[0]);
       </div>
 
       {/* Grid: 1 col on mobile/tablet, 3 cols on large screens */}
-      <ul className="grid grid-cols-1 lg:grid-cols-4 md:grid-cols-2 gap-6">
+      <ul className="grid grid-cols-1 lg:grid-cols-3 md:grid-cols-2 gap-6">
         {books.map((book) => (
           <li
             key={book._id}
@@ -47,25 +46,18 @@ console.log(books[0]);
                     {book.bookTitle}
                   </h3>
                   <p className="text-sm font-medium text-base-content/70 mt-1">
-                    by {book.author}
+                    by {book.bookAuthor}
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-2 mt-auto">
                   {/* Transaction Type from Object */}
                   <div className="flex items-center gap-2">
-                    <span className="badge badge-primary badge-sm font-bold uppercase tracking-wider">
+                    <span className="badge badge-primary badge-md font-bold uppercase tracking-wider">
                       {book.TransactionType}
-                    </span>
-                    <span className="text-xs font-semibold opacity-60">
-                       {book.distance}
                     </span>
                   </div>
                   
-                  {/* Price info */}
-                  <p className="text-lg font-black text-base-content">
-                    ${book.price}
-                  </p>
                 </div>
               </div>
             </div>

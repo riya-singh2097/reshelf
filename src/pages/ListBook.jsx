@@ -4,10 +4,12 @@ import { useState, useMemo } from "react";
 import { toast } from "react-toastify";
 import api from "../lib/axios.js";
 import { useFirebase } from "../context/FirebaseContext.jsx";
+import { useUserContext } from "../context/UserContext.jsx";
 import { uploadImage } from "../lib/cloudinary/uploadImage.js";
 
 const BookListingForm = () => {
   const { user } = useFirebase();
+  const {dbUser } = useUserContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -28,7 +30,7 @@ const BookListingForm = () => {
     condition: "",
     bookTitle: "",
     bookAuthor: "",
-    description: "",
+    aboutBook: "",
     TransactionType: "",
   });
 
@@ -114,7 +116,8 @@ const BookListingForm = () => {
       mutation.mutate({
         ...formData,
         bookCover: finalCover,
-        gallery: galleryUrls
+        gallery: galleryUrls, 
+        ownerName: dbUser.username
       });
     } catch (err) {
       toast.error("Image upload failed");
@@ -259,10 +262,10 @@ const BookListingForm = () => {
         <div className="form-control">
           <label className="label-text font-semibold">About Book / Description</label>
           <textarea 
-            name="description" 
+            name="aboutBook" 
             className="textarea textarea-bordered h-32" 
             placeholder="Tell buyers about the edition, highlighting, or any defects..."
-            value={formData.description}
+            value={formData.aboutBook}
             onChange={handleChange}
           />
         </div>
