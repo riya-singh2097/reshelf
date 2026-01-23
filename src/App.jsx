@@ -10,10 +10,11 @@ function App() {
   return (
 
     <>
+    {loading&&<Loading/>}
      <div className='min-h-screen flex flex-col'>
        <Navbar/>
       <main >
-        {loading?<Loading/>:<Outlet/>}
+        <Outlet/>
       </main>
        <ToastContainer
        position="top-center"

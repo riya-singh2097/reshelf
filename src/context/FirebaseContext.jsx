@@ -1,5 +1,5 @@
 import firebaseConfig from "../firebase/firebaseConfig";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
@@ -63,12 +63,6 @@ console.log("user: ",user);
   //verify user
   const verifyEmail = async (userToVerify) => {
     if (!userToVerify) return;
-
-    // const actionCodeSettings = {
-    //   url: `${window.location.origin}/complete-profile`,
-    //   handleCodeInApp: true,
-    // };
-
     try {
       await sendEmailVerification(userToVerify);
       toast.success("Verification email sent!");
@@ -80,7 +74,6 @@ console.log("user: ",user);
 const refreshUser = async () => {
   if (user) {
     await user.reload();
-    // setUser({ ...user}); // Spread into new object to force React state update
     console.log("new user data: ", user);
     
   }
@@ -91,8 +84,6 @@ const refreshUser = async () => {
     signOut(fireabaseAuth);
     toast.success("Logged Out Successfully!");
   };
-
-
 
   //track of login or logout state
   useEffect(() => {
@@ -109,17 +100,17 @@ console.log("user: ",user);
 
   // console.log("user:",user);
 
-  const value = {
-    createUser,
-    signInUser,
-    signupWithGoogle,
-    logout,
-    user,
-    loading,
-    forgotPassword,
-    verifyEmail,
-    refreshUser
-  };
+ const value = useMemo(() => ({
+  createUser,
+  signInUser,
+  signupWithGoogle,
+  logout,
+  user,
+  loading,
+  forgotPassword,
+  verifyEmail,
+  refreshUser
+}), [user, loading]);
 
   return (
     <FirebaseContext.Provider value={value}>
