@@ -41,6 +41,8 @@ async function handleSearch(query) {
     }
   }
 }
+console.log("book sercg result : ",bookResult);
+
   return (
     <>
       <section>

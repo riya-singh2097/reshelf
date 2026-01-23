@@ -1,34 +1,40 @@
- 
- const BookCard = ({ book,onOpen }) => {
+const BookCard = ({ book, onOpen }) => {
   return (
-
-
     <div 
-      className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group border border-base-300 overflow-hidden"
+      className="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group border border-base-300 overflow-hidden h-full flex flex-col"
       onClick={onOpen}
     >
-      <figure className="bg-base-200 pt-6 px-4">
+      {/* Reduced figure height */}
+      <figure className="bg-base-200 pt-4 px-3 h-40">
         <img 
           src={book?.bookCover} 
           alt={book?.bookTitle} 
-          className="rounded-sm shadow-md h-full w-full object-contain group-hover:scale-105 transition-transform duration-300 "
+          className="rounded-sm shadow-sm h-full w-full object-contain group-hover:scale-105 transition-transform duration-300"
         />
       </figure>
 
-      <div className="card-body p-4 gap-1">
-        <div className="flex justify-between items-start">
-           <span className="badge badge-primary badge-sm">{book?.category}</span>
-           <span className="text-xs opacity-60 font-mono">{book?.condition}</span>
+      {/* Reduced padding and gap */}
+      <div className="card-body p-3 gap-0 flex-grow">
+        <div className="flex justify-between items-center mb-1">
+          <span className="badge badge-primary scale-75 origin-left">{book?.category}</span>
+          <span className="text-[10px] opacity-60 font-mono uppercase">{book?.condition}</span>
         </div>
 
-        <h2 className="card-title text-lg leading-tight line-clamp-2 mt-2">
+        {/* Smaller title text */}
+        <h2 className="text font-bold min-h-[2.5rem]">
           {book?.bookTitle}
         </h2>
-        <p className="text-sm opacity-70 italic">by {book?.bookAuthor}</p>
+        <p className="text-sm opacity-90 italic truncate">by {book?.bookAuthor}</p>
 
-        <div className="card-actions justify-end mt-4">
-          <button className="btn btn-sm btn-outline btn-primary no-animation" onClick={onOpen}>
-             View Details
+        <div className="card-actions justify-end mt-2">
+          <button 
+            className="btn btn-xs btn-primary btn-outline" 
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent double trigger with div onClick
+              onOpen();
+            }}
+          >
+            Details
           </button>
         </div>
       </div>
