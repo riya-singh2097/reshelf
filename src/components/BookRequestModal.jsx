@@ -1,6 +1,41 @@
 import { Link } from "react-router-dom";
+import { useFirebase } from "../context/FirebaseContext.jsx";
+import { toast } from "react-toastify";
+import api from "../lib/axios.js";
+import { useState } from "react";
 
 const BookInfo = ({ book, onClose }) => {
+console.log(book.owner, book._id,book.bookTitle );
+  const { user } = useFirebase();
+  const [loading, setLoading] = useState(false);
+
+  async function handleRequest(e) {
+    e.preventDefault();
+    if (loading) return;
+
+    setLoading(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await api.post(`/request`, {
+        receiverId: book.owner,
+        bookId: book._id,
+        bookTitle: book.bookTitle,
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.data.success) {
+        toast.success("Request sent successfully!");
+        onClose(); // Close modal on success
+      }
+    } catch (error) {
+      // Access the specific error message from your backend duplicate check
+      const errMsg = error.response?.data?.message || error.message;
+      toast.error(errMsg);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <dialog className="modal modal-open backdrop-blur-md transition-all">
@@ -20,7 +55,7 @@ const BookInfo = ({ book, onClose }) => {
               {/* Vibrant Glow Layers */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-primary/40 blur-[50px] rounded-full opacity-40"></div>
               
-              <div className="relative z-10 w-[80%] aspect-[3/4.5] rounded-xl overflow-hidden shadow-2xl border-2 border-white/50">
+              <div className="relative z-10 w-[50%] aspect-[3/4.5] rounded-xl overflow-hidden shadow-2xl border-2 border-white/50">
                 <img 
                   src={book.bookCover} 
                   alt={book.bookTitle} 
@@ -32,7 +67,7 @@ const BookInfo = ({ book, onClose }) => {
             {/* Action Section */}
             <div className="w-full mt-6 space-y-4">
                 <button 
-                    onClick={() => console.log("Request Pressed")}
+                    onClick={handleRequest}
                     className="btn btn-primary btn-block rounded-2xl h-14 text-lg font-bold shadow-lg hover:shadow-primary/40 transition-all border-none"
                 >
                     Request to Borrow

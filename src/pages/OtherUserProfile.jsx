@@ -83,10 +83,6 @@ const OtherUserProfile = () => {
               </p>
             </section>
 
-            <button className="btn btn-primary btn-block rounded-2xl font-black uppercase italic tracking-widest shadow-lg shadow-primary/20">
-              <MessageSquare size={18} />
-              Message
-            </button>
           </div>
         </aside>
 
