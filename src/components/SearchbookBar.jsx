@@ -1,7 +1,7 @@
 import { Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useDebouncedCallback } from "use-debounce";
-import { useNavigate, useSearchParams } from "react-router"; 
+import { Link, useNavigate, useSearchParams } from "react-router"; 
 
 const SearchbookBar = () => {
   const [userInput, setUserInput] = useState('');
@@ -41,6 +41,12 @@ const SearchbookBar = () => {
   return (
     
     <div className="w-full max-w-xs sm:max-w-md md:max-w-xl lg:max-w-2xl mx-auto px-4 mt-4 md:mt-8"> 
+      <div className="breadcrumbs text-sm mb-4">
+          <ul>
+            <li><Link to="/dashboard">Dashboard</Link></li>
+            <li className="text-primary font-semibold">Search</li>
+          </ul>
+        </div>
       <div className="search-bar w-full">
         <form onSubmit={handleSearchBook}>
           <div className="flex gap-2 sm:gap-3">

@@ -1,5 +1,5 @@
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useState, useMemo } from "react";
 import { toast } from "react-toastify";
 import api from "../lib/axios.js";
@@ -9,13 +9,12 @@ import { uploadImage } from "../lib/cloudinary/uploadImage.js";
 
 const BookListingForm = () => {
   const { user } = useFirebase();
-  const {dbUser } = useUserContext();
+  const { dbUser } = useUserContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [loading, setLoading] = useState(false);
   
-  // Image States
   const [coverFile, setCoverFile] = useState(null);
   const [coverPreview, setCoverPreview] = useState("");
   const [galleryFiles, setGalleryFiles] = useState([]);
@@ -24,7 +23,7 @@ const BookListingForm = () => {
   const [formData, setFormData] = useState({
     category: "",
     academicType: "",
-    subCategory: "",
+    subCategory: "", // Used for Standards (1st, 2nd, etc.)
     board: "",
     isbn: "",
     condition: "",
@@ -34,7 +33,6 @@ const BookListingForm = () => {
     TransactionType: "",
   });
 
-  // TanStack Mutation for clean cache management
   const mutation = useMutation({
     mutationFn: async (payload) => {
       const token = await user.getIdToken();
@@ -50,7 +48,6 @@ const BookListingForm = () => {
     onError: (err) => toast.error(err.message || "Failed to list book"),
   });
 
-  // Fetch from OpenLibrary
   const fetchFromOpenLibrary = async (isbn) => {
     if (isbn.length < 10) return;
     try {
@@ -66,8 +63,6 @@ const BookListingForm = () => {
         }));
         if (book.cover?.large) setCoverPreview(book.cover.large);
         toast.success("Book details fetched automatically!");
-      } else {
-        toast.info("No data found for this ISBN. Please add details manually.");
       }
     } catch (error) {
       console.error("API Error", error);
@@ -77,6 +72,12 @@ const BookListingForm = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Reset specific fields when main categories change to keep data clean
+    if (name === "category" && value === "non-academic") {
+        setFormData(prev => ({ ...prev, academicType: "", board: "", subCategory: "" }));
+    }
+
     if (name === "isbn" && (value.length === 10 || value.length === 13)) {
       fetchFromOpenLibrary(value);
     }
@@ -93,7 +94,6 @@ const BookListingForm = () => {
   const handleGalleryChange = (e) => {
     const files = Array.from(e.target.files);
     if (galleryFiles.length + files.length > 4) return toast.error("Max 4 gallery photos");
-    
     setGalleryFiles(prev => [...prev, ...files]);
     const newPreviews = files.map(f => URL.createObjectURL(f));
     setGalleryPreviews(prev => [...prev, ...newPreviews]);
@@ -106,11 +106,8 @@ const BookListingForm = () => {
 
     setLoading(true);
     try {
-      // 1. Upload Cover (if it's a file and not an API URL)
       let finalCover = coverPreview;
       if (coverFile) finalCover = await uploadImage(coverFile, "book_covers");
-
-      // 2. Upload Gallery
       const galleryUrls = await Promise.all(galleryFiles.map(f => uploadImage(f, "book_gallery")));
 
       mutation.mutate({
@@ -132,51 +129,20 @@ const BookListingForm = () => {
            formData.board === "ICSE" 
   }, [formData.category, formData.academicType, formData.board]);
 
+  const standards = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
+
   return (
     <section className="min-h-screen bg-base-200 py-10 px-4">
+      <div className="breadcrumbs text-sm mb-4">
+        <ul>
+          <li><Link to="/dashboard">Dashboard</Link></li>
+          <li><Link to="/profile">Profile</Link></li>
+          <li className="text-primary font-semibold">ListBook</li>
+        </ul>
+      </div>
+
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-8 bg-base-100 p-8 rounded-2xl shadow-xl">
         
-        {/* MEDIA SECTION */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold">Book Media</h3>
-          
-          <div className="flex flex-col md:flex-row gap-8 items-start">
-            {/* Primary Cover */}
-            <div className="form-control">
-              <span className="label-text font-semibold mb-2 text-center">Main Cover</span>
-              <div className="w-40 h-56 border-2 border-dashed rounded-lg flex flex-col items-center justify-center overflow-hidden relative bg-base-200">
-                {coverPreview ? (
-                  <img src={coverPreview} className="object-cover w-full h-full" alt="Cover" />
-                ) : (
-                  <span className="text-xs text-center p-2 opacity-50">No Cover Selected</span>
-                )}
-                <input type="file" onChange={handleCoverChange} className="absolute inset-0 opacity-0 cursor-pointer" />
-              </div>
-            </div>
-
-            {/* Gallery Section */}
-            <div className="flex-1 w-full">
-              <span className="label-text font-semibold mb-2 block">Real Book Gallery (Min 1, Max 4)</span>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-2 border-dashed p-4 rounded-xl min-h-[150px]">
-                {galleryPreviews.map((src, i) => (
-                  <div key={i} className="aspect-square rounded-lg overflow-hidden border">
-                    <img src={src} className="object-cover w-full h-full" alt="Preview" />
-                  </div>
-                ))}
-                {galleryFiles.length < 4 && (
-                  <label className="aspect-square flex flex-col items-center justify-center bg-base-200 rounded-lg cursor-pointer hover:bg-base-300 border border-base-300">
-                    <span className="text-2xl">+</span>
-                    <span className="text-[10px]">Add Photo</span>
-                    <input type="file" multiple onChange={handleGalleryChange} className="hidden" />
-                  </label>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <hr />
-
         {/* CATEGORY & ISBN ROW */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="form-control">
@@ -198,23 +164,45 @@ const BookListingForm = () => {
 
         {/* DYNAMIC ACADEMIC FIELDS */}
         {formData.category === "academic" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in zoom-in-95">
-             <div className="form-control">
-              <label className="label-text font-semibold mb-1">Academic Level</label>
-              <select name="academicType" value={formData.academicType} onChange={handleChange} className="select select-bordered" required>
-                <option value="">-- Level --</option>
-                <option value="school">School</option>
-                <option value="college">College</option>
-              </select>
-            </div>
-            {formData.academicType === "school" && (
+          <div className="space-y-6 animate-in fade-in zoom-in-95">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="form-control">
-                <label className="label-text font-semibold mb-1">Board</label>
-                <select name="board" value={formData.board} onChange={handleChange} className="select select-bordered" required>
-                  <option value="">-- Board --</option>
-                  <option value="CBSE">CBSE</option>
-                  <option value="ICSE">ICSE</option>
-                  <option value="state">State Board</option>
+                <label className="label-text font-semibold mb-1">Academic Level</label>
+                <select name="academicType" value={formData.academicType} onChange={handleChange} className="select select-bordered" required>
+                  <option value="">-- Level --</option>
+                  <option value="school">School</option>
+                  <option value="college">College</option>
+                </select>
+              </div>
+
+              {formData.academicType === "school" && (
+                <div className="form-control">
+                  <label className="label-text font-semibold mb-1">Board</label>
+                  <select name="board" value={formData.board} onChange={handleChange} className="select select-bordered" required>
+                    <option value="">-- Board --</option>
+                    <option value="CBSE">CBSE</option>
+                    <option value="ICSE">ICSE</option>
+                    <option value="state">State Board</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* NEW STANDARD FIELD (Maps to subCategory) */}
+            {formData.academicType === "school" && (
+              <div className="form-control max-w-md animate-in slide-in-from-top-2">
+                <label className="label-text font-bold mb-2 text-secondary">Which Standard? *</label>
+                <select 
+                  name="subCategory" 
+                  value={formData.subCategory} 
+                  onChange={handleChange} 
+                  className="select select-secondary select-bordered" 
+                  required
+                >
+                  <option value="">-- Select Standard --</option>
+                  {standards.map(std => (
+                    <option key={std} value={std}>{std} Standard</option>
+                  ))}
                 </select>
               </div>
             )}
@@ -222,7 +210,7 @@ const BookListingForm = () => {
         )}
 
         {/* BASIC INFO */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-6">
           <div className="form-control">
             <label className="label-text font-semibold">Book Title *</label>
             <input name="bookTitle" value={formData.bookTitle} onChange={handleChange} className="input input-bordered" required />
@@ -233,7 +221,6 @@ const BookListingForm = () => {
           </div>
         </div>
 
-        
         <div className="grid grid-cols-2 gap-4">
           <div className="form-control">
             <label className="label-text font-semibold">Condition</label>
@@ -256,6 +243,42 @@ const BookListingForm = () => {
               <option value="rent">Rent</option>
               <option value="free">Giveaway / Free</option>
             </select>
+          </div>
+        </div>
+
+        {/* MEDIA SECTION */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold">Book Media</h3>
+          <div className="flex flex-col md:flex-row gap-8 items-start">
+            <div className="form-control">
+              <span className="label-text font-semibold mb-2 text-center">Main Cover</span>
+              <div className="w-40 h-56 border-2 border-dashed rounded-lg flex flex-col items-center justify-center overflow-hidden relative bg-base-200">
+                {coverPreview ? (
+                  <img src={coverPreview} className="object-cover w-full h-full" alt="Cover" />
+                ) : (
+                  <span className="text-xs text-center p-2 opacity-50">No Cover Selected</span>
+                )}
+                <input type="file" onChange={handleCoverChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+              </div>
+            </div>
+
+            <div className="flex-1 w-full">
+              <span className="label-text font-semibold mb-2 block">Real Book Gallery (Min 1, Max 4)</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-2 border-dashed p-4 rounded-xl min-h-[150px]">
+                {galleryPreviews.map((src, i) => (
+                  <div key={i} className="aspect-square rounded-lg overflow-hidden border">
+                    <img src={src} className="object-cover w-full h-full" alt="Preview" />
+                  </div>
+                ))}
+                {galleryFiles.length < 4 && (
+                  <label className="aspect-square flex flex-col items-center justify-center bg-base-200 rounded-lg cursor-pointer hover:bg-base-300 border border-base-300">
+                    <span className="text-2xl">+</span>
+                    <span className="text-[10px]">Add Photo</span>
+                    <input type="file" multiple onChange={handleGalleryChange} className="hidden" />
+                  </label>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

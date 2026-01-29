@@ -17,6 +17,7 @@ const Profile = () => {
   const { dbUser } = useUserContext();
   const [selectedBook, setSelectedBook] = useState(null);
   const queryClient = useQueryClient();
+console.log("dbuser: ", dbUser);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -94,7 +95,6 @@ const deleteBook = (id) => {
       <section className="p-8">
         <div className="breadcrumbs text-sm mb-4">
           <ul>
-            <li><Link to="/">Home</Link></li>
             <li><Link to="/dashboard">Dashboard</Link></li>
             <li className="text-primary font-semibold">Profile</li>
           </ul>
