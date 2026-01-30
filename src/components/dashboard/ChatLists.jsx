@@ -12,47 +12,63 @@ const ChatLists = ({ selectedConversation }) => {
       const res = await api.get("/message/conversations", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      return res.data.data || [];
+      // DIRECT MATCH: Your backend sends the array directly as 'res.data'
+      return res.data; 
     },
     enabled: !!user,
   });
 
-  if (isLoading) return <div className="p-4 text-center"><span className="loading loading-spinner text-primary"></span></div>;
+  if (isLoading) return (
+    <div className="flex justify-center p-10">
+      <span className="loading loading-spinner text-primary"></span>
+    </div>
+  );
 
   return (
-    <div className="w-full bg-base-100 h-full">
-      <div className="flex flex-col p-4">
-        <h1 className="text-3xl font-black mb-6 text-base-content">Chats</h1>
-        <div className="space-y-1">
-          {conversations.length === 0 ? (
-            <div className="text-center py-20 opacity-40">
-              <p>No active conversations.</p>
-            </div>
-          ) : (
-            conversations.map((chat) => (
+    <div className="w-full bg-base-100 h-full flex flex-col">
+      <div className="p-4 border-b border-base-300">
+        <h1 className="text-3xl font-black text-base-content">Chats</h1>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {conversations.length === 0 ? (
+          <div className="text-center py-20 opacity-40">
+            <p className="text-sm">No conversations found.</p>
+          </div>
+        ) : (
+          <div className="p-2 space-y-1">
+            {conversations.map((chat) => (
               <div 
                 key={chat._id} 
-                className="group" 
                 onClick={() => selectedConversation(chat._id)}
+                className="flex gap-4 items-center p-3 rounded-2xl hover:bg-base-200 transition-all cursor-pointer group active:scale-[0.98]"
               >
-                <div className="flex gap-4 items-center p-3 rounded-2xl hover:bg-base-200 transition-all cursor-pointer active:scale-95">
-                  <div className="avatar">
-                    <div className="w-14 rounded-full ring-primary/30 ring-2">
-                      <img src={chat.otherUser?.profilePhotoURL || "https://via.placeholder.com/150"} alt="profile" />
-                    </div>
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <h1 className="font-bold text-base-content">{chat.otherUser?.username}</h1>
-                    <p className="text-xs text-base-content/60 truncate">
-                      {chat.lastMessage?.message || "Click to start chatting..."}
-                    </p>
+                {/* Avatar with DaisyUI ring */}
+                <div className="avatar">
+                  <div className="w-12 rounded-full ring-primary ring-offset-base-100 group-hover:ring-2 ring-offset-2 transition-all">
+                    <img 
+                      src={chat.otherUser?.profilePhotoURL || "https://via.placeholder.com/150"} 
+                      alt={chat.otherUser?.username} 
+                    />
                   </div>
                 </div>
-                <div className="divider my-0 opacity-5"></div>
+
+                {/* User Info & Last Message */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-baseline">
+                    <h2 className="font-bold text-base-content truncate">
+                      {chat.otherUser?.username}
+                    </h2>
+                    {/* Optional: Format updatedAt if you want a timestamp here */}
+                  </div>
+                  <p className="text-xs text-base-content/60 truncate italic">
+                    {chat.lastMessage?.message || "No messages yet"}
+                  </p>
+                </div>
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
