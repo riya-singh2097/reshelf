@@ -4,7 +4,7 @@ const ThemeContext = createContext("")
 
 
 export const ThemeProvider = ({children}) =>{
-    const [theme, setTheme] = useState(localStorage.getItem("theme") || "nord")
+    const [theme, setTheme] = useState(localStorage.getItem("theme") || "emerald")
 
     useEffect(()=>{
         
@@ -15,7 +15,7 @@ export const ThemeProvider = ({children}) =>{
     const toggleTheme = ()=>{
         // console.log("theme chnaged ");
         
-        setTheme((prev)=>(prev === "nord"? "night" : "nord"))
+        setTheme((prev)=>(prev === "emerald"? "night" : "emerald"))
     }
 
     return(

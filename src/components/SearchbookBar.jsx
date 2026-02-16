@@ -54,9 +54,7 @@ const SearchbookBar = () => {
               type="text"
               placeholder="Search books..."
               value={userInput}
-              /* h-10 sm:h-12: Smaller height on mobile for better thumb reach
-                 text-sm sm:text-base: Adjust font size for readability
-              */
+              autoFocus
               className="input bg-neutral-400 w-full placeholder-black text-black text-sm sm:text-base h-10 sm:h-12"
               onChange={handleChange}
             />

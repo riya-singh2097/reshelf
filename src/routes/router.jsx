@@ -1,9 +1,7 @@
 import { lazy } from "react";
 import { createBrowserRouter, Outlet } from "react-router";
 import App from "../App.jsx";
-const RequestList = lazy(
-  () => import("../components/dashboard/RequestList.jsx"),
-);
+
 const SearchPage = lazy(() => import("../pages/SearchPage.jsx"));
 const OtherUserProfile = lazy(() => import("../pages/OtherUserProfile.jsx"));
 const MessageContainer = lazy(
@@ -11,6 +9,7 @@ const MessageContainer = lazy(
 );
 const AuthGuard = lazy(() => import("./guards/AuthGuard.jsx"));
 const GuestGuard = lazy(() => import("./guards/GuestGuard.jsx"));
+const AdminGuard = lazy(() => import("./guards/AdminGuard.jsx"));
 const OnboardingGuard = lazy(() => import("./guards/OnboardingGuard.jsx"));
 const EmailVerifyGuard = lazy(() => import("./guards/EmailVerifyGuard.jsx"));
 const LandingPage = lazy(() => import("../pages/LandingPage.jsx"));
@@ -26,6 +25,9 @@ const UpdateProfile = lazy(() => import("../pages/UpdateProfile.jsx"));
 const VerifyEmailInstructionsPage = lazy(
   () => import("../components/VerifyEmailInstructionsPage.jsx"),
 );
+const AdminDashboard = lazy(() => import("../pages/AdminDashboard.jsx"));
+const AdminLogin = lazy(() => import("../pages/AdminLogin.jsx"));
+const ShopDashboard = lazy(() => import("../pages/ShopDashboard.jsx"));
 
 const router = createBrowserRouter([
   {
@@ -51,6 +53,16 @@ const router = createBrowserRouter([
         ],
       },
       {
+        path: "/admin-login",
+        element: <AdminLogin />,
+      },
+      {
+        element: <AdminGuard/>, // Only checks for adminToken + Admin Role
+        children: [
+          { path: "/admin", element: <AdminDashboard /> },
+        ],
+      },
+      {
         element: (
           <AuthGuard>
             <EmailVerifyGuard>
@@ -70,6 +82,8 @@ const router = createBrowserRouter([
           },
           { path: "/search", element: <SearchPage /> },
           { path: "/profile", element: <Profile /> },
+          { path: "/shop-dashboard", element: <ShopDashboard /> }, 
+          { path: "/admin", element: <AdminDashboard /> },
           { path: "/profile/:id", element: <OtherUserProfile /> },
           { path: "/listbook", element: <ListBook /> },
           { path: "/update-profile", element: <UpdateProfile /> },

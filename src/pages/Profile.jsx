@@ -17,13 +17,12 @@ const Profile = () => {
   const { dbUser } = useUserContext();
   const [selectedBook, setSelectedBook] = useState(null);
   const queryClient = useQueryClient();
-console.log("dbuser: ", dbUser);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
 
-  // 1. Safe Destructuring of dbUser (Fixes the ReferenceError)
+  // 1. Safe Destructuring
   const {
     aboutMe = "No bio provided.",
     email,
@@ -36,59 +35,51 @@ console.log("dbuser: ", dbUser);
   const { street, city, state, pincode, country } = address;
   const { instagram, website, twitter } = socialLinks;
 
-  // 2. Fetch Books
   const {
-    data: books,
+    data: booksData,
     isLoading,
     isError,
     error,
   } = useQuery({
     queryKey: ["booksByCurrentUser"],
     queryFn: async () => {
-      const token = await user.getIdToken();
-      const response = await api.get("/book/currentUser", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.data;
+      const response = await api.get("/book/currentUser");
+      return response?.data?.data || response?.data || [];
     },
     enabled: !!user,
   });
 
-  // 3. Pagination Logic
+  // 3. Safety Guard: Ensure 'books' is ALWAYS an array before calling .slice
+  const books = Array.isArray(booksData) ? booksData : [];
+
+  // 4. Pagination Logic (Now safe)
   const indexOfLastBook = currentPage * itemsPerPage;
   const indexOfFirstBook = indexOfLastBook - itemsPerPage;
-  const currentBooks = books?.slice(indexOfFirstBook, indexOfLastBook);
-  const totalPages = Math.ceil((books?.length || 0) / itemsPerPage);
+  const currentBooks = books.slice(indexOfFirstBook, indexOfLastBook);
+  const totalPages = Math.ceil(books.length / itemsPerPage);
 
-  // Guard clause for initial load
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      return api.delete(`/book/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["booksByCurrentUser"] });
+      toast.success("Book deleted successfully!");
+      setSelectedBook(null);
+    },
+    onError: (error) => {
+      toast.error(`Delete failed: ${error.response?.data?.message || error.message}`);
+    }
+  });
+
+  const deleteBook = (id) => {
+    if (window.confirm("Are you sure you want to delete this book?")) {
+      deleteMutation.mutate(id);
+    }
+  };
+
   if (!dbUser && !isError) return <Loading />;
-
-  //delete book
-
-const deleteMutation = useMutation({
-  mutationFn: async (id) => {
-    const token = await user.getIdToken();
-    return api.delete(`/book/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  },
-  onSuccess: () => {
-    // This tells React Query to refetch the books list immediately
-    queryClient.invalidateQueries({ queryKey: ["booksByCurrentUser"] });
-    toast.success("Book deleted successfully!");
-    setSelectedBook(null); // Close the modal
-  },
-  onError: (error) => {
-    toast.error(`Delete failed: ${error.response?.data?.message || error.message}`);
-  }
-});
-
-// Update your delete function to call the mutation
-const deleteBook = (id) => {
-  if (window.confirm("Are you sure you want to delete this book?")) {
-    deleteMutation.mutate(id);
-  }
-};
 
   return (
     <>
@@ -105,7 +96,7 @@ const deleteBook = (id) => {
           {/* LEFT CONTAINER: Books Grid */}
           <div className="left-container w-full max-md:order-2">
             <h1 className="text-center mb-8 text-2xl font-bold border-b pb-2 border-base-300">
-              Books Listed ({books?.length || 0})
+              Books Listed ({books.length})
             </h1>
 
             {isError && (
@@ -119,7 +110,7 @@ const deleteBook = (id) => {
             ) : (
               <div className="flex flex-col items-center">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
-                  {currentBooks?.map((book) => (
+                  {currentBooks.map((book) => (
                     <BookCard
                       key={book._id}
                       book={book}
@@ -128,7 +119,7 @@ const deleteBook = (id) => {
                   ))}
                 </div>
 
-                {books?.length < 1 && (
+                {books.length < 1 && (
                   <div className="text-center py-20 opacity-50 italic">
                     You haven't listed any books yet.
                   </div>
@@ -162,10 +153,7 @@ const deleteBook = (id) => {
 
           {/* RIGHT SIDEBAR: User Info */}
           <div className="card bg-base-100 shadow-xl border border-base-300 p-6 flex flex-col md:w-1/3 w-full max-md:order-1 h-fit">
-            <Link
-              to="/listbook"
-              className="btn btn-primary font-bold text-lg mb-8 shadow-md"
-            >
+            <Link to="/listbook" className="btn btn-primary font-bold text-lg mb-8 shadow-md">
               + List a Book
             </Link>
 
@@ -179,9 +167,8 @@ const deleteBook = (id) => {
                   />
                 </div>
               </div>
-              <h2 className="mt-4 text-2xl font-bold text-center">
-                {username}
-              </h2>
+              <h2 className="mt-4 text-2xl font-bold text-center">{username}</h2>
+              <div className="badge badge-outline mt-2 uppercase font-bold tracking-widest">{dbUser?.role}</div>
             </div>
 
             <div className="divider">Details</div>
@@ -221,25 +208,23 @@ const deleteBook = (id) => {
               </div>
 
               <div className="divider">About Me</div>
-              <p className="italic text-base-content/80 leading-relaxed">
-                "{aboutMe}"
-              </p>
+              <p className="italic text-base-content/80 leading-relaxed">"{aboutMe}"</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mt-10">
-              <Link to="/update-profile" className="btn btn-outline btn-info btn-sm">
-                Edit Profile
-              </Link>
-              <button onClick={logout} className="btn btn-outline btn-error btn-sm">
-                Log Out
-              </button>
+              <Link to="/update-profile" className="btn btn-outline btn-info btn-sm">Edit Profile</Link>
+              <button onClick={logout} className="btn btn-outline btn-error btn-sm">Log Out</button>
             </div>
           </div>
         </div>
       </section>
 
       {selectedBook && (
-        <BookModal book={selectedBook} onClose={() => setSelectedBook(null)} onDelete={()=>deleteBook(selectedBook._id)} />
+        <BookModal 
+          book={selectedBook} 
+          onClose={() => setSelectedBook(null)} 
+          onDelete={() => deleteBook(selectedBook._id)} 
+        />
       )}
     </>
   );

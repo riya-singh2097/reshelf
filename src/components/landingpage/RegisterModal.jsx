@@ -12,9 +12,9 @@ const Register = () => {
   const navigate = useNavigate();
 
   async function googleSignUpHandler() {
+    localStorage.removeItem("adminToken");
     try {
        await signupWithGoogle();
-      // console.log("result by register: ", result);
       navigate("/complete-profile", { state: { isNewUser: true } });
     } catch (error) {
       console.error(error);
@@ -25,6 +25,7 @@ const Register = () => {
   }
 
 async function handleSubmit(e) {
+  localStorage.removeItem("adminToken");
   e.preventDefault();
   try {
     if (password === confirmPassword) {

@@ -8,7 +8,7 @@ export default {
   },
   plugins: [daisyui],
    daisyui: {
-    themes: [ "night", "nord"
+    themes: [ "night", "emerald"
       ,{
        mytheme: {
           

@@ -17,6 +17,7 @@ const Login = () => {
   
   
   async function handleSubmit(e) {
+    localStorage.removeItem("adminToken");
    e.preventDefault();
     try {
       await signInUser(email, password);
@@ -29,6 +30,7 @@ const Login = () => {
   } 
 
   async function  googleSignInHandler(){
+    localStorage.removeItem("adminToken");
     try {
       await signupWithGoogle()
       navigate('/dashboard')

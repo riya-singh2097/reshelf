@@ -5,7 +5,10 @@ import { ChevronRight, BookOpen } from "lucide-react";
 const BooksSearchResult = ({ books = [] }) => {
   const [selectedBook, setSelectedBook] = useState(null);
 
-  if (books.length === 0) {
+  // Filter here as a safety measure, though the API should handle it
+  const availableBooks = books.filter(book => book.isAvailable !== false);
+
+  if (availableBooks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 opacity-50 text-base-content">
         <BookOpen size={48} className="mb-4" />
@@ -21,16 +24,14 @@ const BooksSearchResult = ({ books = [] }) => {
         <div className="h-1 w-16 bg-primary rounded-full mt-2"></div>
       </div>
 
-      {/* Grid: 1 col on mobile/tablet, 3 cols on large screens */}
       <ul className="grid grid-cols-1 lg:grid-cols-3 md:grid-cols-2 gap-6">
-        {books.map((book) => (
+        {availableBooks.map((book) => (
           <li
             key={book._id}
             onClick={() => setSelectedBook(book)}
             className="group flex flex-col justify-between bg-base-200 p-5 rounded-2xl cursor-pointer hover:bg-base-300 transition-all duration-300 border border-base-300 hover:border-primary/40 shadow-sm hover:shadow-xl"
           >
             <div className="flex gap-4">
-              {/* Cover Image */}
               <div className="relative shrink-0">
                 <img
                   src={book.bookCover || "/book-placeholder.png"}
@@ -39,7 +40,6 @@ const BooksSearchResult = ({ books = [] }) => {
                 />
               </div>
 
-              {/* Book Details */}
               <div className="flex flex-col justify-between py-1">
                 <div>
                   <h3 className="font-bold text-lg leading-tight text-base-content group-hover:text-primary transition-colors line-clamp-2">
@@ -51,18 +51,15 @@ const BooksSearchResult = ({ books = [] }) => {
                 </div>
 
                 <div className="flex flex-col gap-2 mt-auto">
-                  {/* Transaction Type from Object */}
                   <div className="flex items-center gap-2">
                     <span className="badge badge-primary badge-md font-bold uppercase tracking-wider">
                       {book.TransactionType}
                     </span>
                   </div>
-                  
                 </div>
               </div>
             </div>
 
-            {/* Bottom bar for card polish */}
             <div className="mt-4 pt-3 border-t border-base-content/5 flex justify-between items-center text-primary font-semibold text-sm">
               View Details
               <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />

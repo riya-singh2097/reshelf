@@ -8,11 +8,7 @@ const ChatLists = ({ selectedConversation }) => {
   const { data: conversations = [], isLoading } = useQuery({
     queryKey: ["conversations", user?.uid],
     queryFn: async () => {
-      const token = await user.getIdToken();
-      const res = await api.get("/message/conversations", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      // DIRECT MATCH: Your backend sends the array directly as 'res.data'
+      const res = await api.get("/message/conversations");
       return res.data; 
     },
     enabled: !!user,
@@ -40,7 +36,7 @@ const ChatLists = ({ selectedConversation }) => {
             {conversations.map((chat) => (
               <div 
                 key={chat._id} 
-                onClick={() => selectedConversation(chat._id)}
+                onClick={() => selectedConversation(chat._id,chat.otherUser?.username,chat.otherUser?.profilePhotoURL, )}
                 className="flex gap-4 items-center p-3 rounded-2xl hover:bg-base-200 transition-all cursor-pointer group active:scale-[0.98]"
               >
                 {/* Avatar with DaisyUI ring */}
