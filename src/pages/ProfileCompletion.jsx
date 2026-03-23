@@ -8,7 +8,7 @@ import { toast } from "react-toastify";
 import axios from "axios";
 
 const ProfileCompletion = () => {
-  const { user } = useFirebase();
+ const { user } = useFirebase();
   const { refreshUser } = useUserContext();
   const navigate = useNavigate();
 
@@ -93,14 +93,12 @@ const ProfileCompletion = () => {
   };
 
   // Submit Handler
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
 
-      let finalImageUrl =
-        user?.photoURL ||
-        "https://i.pinimg.com/736x/79/e8/9f/79e89fdc173fed118526a1d32e1aac61.jpg";
+      let finalImageUrl = user?.photoURL || "https://i.pinimg.com/736x/79/e8/9f/79e89fdc173fed118526a1d32e1aac61.jpg";
 
       if (imageFile) {
         const uploadedUrl = await uploadImage(imageFile);
@@ -112,17 +110,26 @@ const ProfileCompletion = () => {
         email: user.email,
         profilePhotoURL: finalImageUrl,
         username: userName,
-        role,
+        role, // 'shop' or 'individual'
         address,
         socialLinks,
         aboutMe,
       };
 
+      // 1. Create the profile in DB
       await api.post("/user/profile/create", payload);
 
+      // 2. Refresh UserContext (this re-runs the useQuery to set isNew: false)
+      await refreshUser(); 
+
       toast.success("Profile completed successfully!");
-      await refreshUser();
-      navigate("/dashboard");
+
+      // 3. Navigate based on the role just submitted
+      if (role === "shop") {
+        navigate("/shop-dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       console.error(err);
       toast.error("Something went wrong");

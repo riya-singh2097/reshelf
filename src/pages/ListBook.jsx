@@ -1,5 +1,5 @@
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useMemo } from "react";
 import { toast } from "react-toastify";
 import api from "../lib/axios.js";
@@ -23,29 +23,33 @@ const BookListingForm = () => {
   const [formData, setFormData] = useState({
     category: "",
     academicType: "",
-    subCategory: "", // Used for Standards (1st, 2nd, etc.)
+    subCategory: "", 
     board: "",
     isbn: "",
-    condition: "",
+    condition: "5",
     bookTitle: "",
     bookAuthor: "",
     aboutBook: "",
     TransactionType: "",
   });
 
+  // --- Mutation Logic ---
   const mutation = useMutation({
     mutationFn: async (payload) => {
-      const token = await user.getIdToken();
-      return api.post("/book/listbook", payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // We don't need to manually get token here because 
+      // your updated api.js interceptor handles it automatically!
+      return api.post("/book/listbook", payload);
     },
     onSuccess: () => {
       toast.success("Book Listed Successfully!");
+      // This refreshes the cache for BOTH Profile and ShopDashboard
       queryClient.invalidateQueries({ queryKey: ["booksByCurrentUser"] });
       navigate("/profile");
     },
-    onError: (err) => toast.error(err.message || "Failed to list book"),
+    onError: (err) => {
+      console.error("Mutation Error:", err);
+      toast.error(err.response?.data?.message || "Failed to list book in database");
+    },
   });
 
   const fetchFromOpenLibrary = async (isbn) => {
@@ -62,10 +66,10 @@ const BookListingForm = () => {
           bookAuthor: book.authors?.[0]?.name || prev.bookAuthor,
         }));
         if (book.cover?.large) setCoverPreview(book.cover.large);
-        toast.success("Book details fetched automatically!");
+        toast.success("Book details fetched!");
       }
     } catch (error) {
-      console.error("API Error", error);
+      console.error("OpenLibrary API Error", error);
     }
   };
 
@@ -73,7 +77,6 @@ const BookListingForm = () => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Reset specific fields when main categories change to keep data clean
     if (name === "category" && value === "non-academic") {
         setFormData(prev => ({ ...prev, academicType: "", board: "", subCategory: "" }));
     }
@@ -99,6 +102,7 @@ const BookListingForm = () => {
     setGalleryPreviews(prev => [...prev, ...newPreviews]);
   };
 
+  // --- Final Submission Logic ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!coverPreview) return toast.error("Cover image is required");
@@ -107,19 +111,34 @@ const BookListingForm = () => {
     setLoading(true);
     try {
       let finalCover = coverPreview;
-      if (coverFile) finalCover = await uploadImage(coverFile, "book_covers");
-      const galleryUrls = await Promise.all(galleryFiles.map(f => uploadImage(f, "book_gallery")));
+      
+      // 1. Upload Cover to Cloudinary (if it's a new file)
+      if (coverFile) {
+        finalCover = await uploadImage(coverFile, "book_covers");
+        if (!finalCover) throw new Error("Cover upload failed");
+      }
 
+      // 2. Upload Gallery to Cloudinary
+      const galleryUrls = await Promise.all(
+        galleryFiles.map(f => uploadImage(f, "book_gallery"))
+      );
+
+      if (galleryUrls.some(url => !url)) {
+        throw new Error("One or more gallery images failed to upload");
+      }
+
+      // 3. Send to Backend
       mutation.mutate({
         ...formData,
         bookCover: finalCover,
         gallery: galleryUrls, 
-        ownerName: dbUser.username
+        ownerName: dbUser?.username || "User"
       });
+
     } catch (err) {
-      toast.error("Image upload failed");
-    } finally {
-      setLoading(false);
+      console.error("Submission Process Error:", err);
+      toast.error(err.message || "Something went wrong during upload");
+      setLoading(false); // Only stop loading on error so the button stays disabled on success
     }
   };
 
@@ -133,17 +152,16 @@ const BookListingForm = () => {
 
   return (
     <section className="min-h-screen bg-base-200 py-10 px-4">
-      <div className="breadcrumbs text-sm mb-4">
+      <div className="breadcrumbs text-sm mb-4 max-w-4xl mx-auto">
         <ul>
           <li><Link to="/dashboard">Dashboard</Link></li>
           <li><Link to="/profile">Profile</Link></li>
-          <li className="text-primary font-semibold">ListBook</li>
+          <li className="text-primary font-semibold">List New Book</li>
         </ul>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-8 bg-base-100 p-8 rounded-2xl shadow-xl">
+      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-8 bg-base-100 p-6 md:p-10 rounded-3xl shadow-2xl border border-base-300">
         
-        {/* CATEGORY & ISBN ROW */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="form-control">
             <label className="label-text font-bold mb-2">Main Category *</label>
@@ -155,16 +173,15 @@ const BookListingForm = () => {
           </div>
 
           {showISBN && (
-            <div className="form-control animate-in fade-in slide-in-from-right-4">
+            <div className="form-control">
               <label className="label-text font-bold mb-2">ISBN Number</label>
               <input type="text" name="isbn" placeholder="Enter ISBN to auto-fill" className="input input-bordered" value={formData.isbn} onChange={handleChange} />
             </div>
           )}
         </div>
 
-        {/* DYNAMIC ACADEMIC FIELDS */}
         {formData.category === "academic" && (
-          <div className="space-y-6 animate-in fade-in zoom-in-95">
+          <div className="space-y-6 p-4 bg-base-200/50 rounded-2xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="form-control">
                 <label className="label-text font-semibold mb-1">Academic Level</label>
@@ -188,29 +205,19 @@ const BookListingForm = () => {
               )}
             </div>
 
-            {/* NEW STANDARD FIELD (Maps to subCategory) */}
             {formData.academicType === "school" && (
-              <div className="form-control max-w-md animate-in slide-in-from-top-2">
-                <label className="label-text font-bold mb-2 text-secondary">Which Standard? *</label>
-                <select 
-                  name="subCategory" 
-                  value={formData.subCategory} 
-                  onChange={handleChange} 
-                  className="select select-secondary select-bordered" 
-                  required
-                >
+              <div className="form-control max-w-md">
+                <label className="label-text font-bold mb-2 text-primary">Standard/Grade *</label>
+                <select name="subCategory" value={formData.subCategory} onChange={handleChange} className="select select-primary select-bordered" required>
                   <option value="">-- Select Standard --</option>
-                  {standards.map(std => (
-                    <option key={std} value={std}>{std} Standard</option>
-                  ))}
+                  {standards.map(std => <option key={std} value={std}>{std} Standard</option>)}
                 </select>
               </div>
             )}
           </div>
         )}
 
-        {/* BASIC INFO */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-base-300 pt-6">
           <div className="form-control">
             <label className="label-text font-semibold">Book Title *</label>
             <input name="bookTitle" value={formData.bookTitle} onChange={handleChange} className="input input-bordered" required />
@@ -221,7 +228,7 @@ const BookListingForm = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="form-control">
             <label className="label-text font-semibold">Condition</label>
             <select name="condition" value={formData.condition} onChange={handleChange} className="select select-bordered" required>
@@ -233,7 +240,7 @@ const BookListingForm = () => {
             </select>
           </div>
           <div className="form-control">
-            <label className="label-text font-semibold">Transaction</label>
+            <label className="label-text font-semibold">Listing Type</label>
             <select name="TransactionType" value={formData.TransactionType} onChange={handleChange} className="select select-bordered" required>
               <option value="">-- Select --</option>
               <option value="lend">Lend</option>
@@ -241,39 +248,38 @@ const BookListingForm = () => {
               <option value="sell">Sell</option>
               <option value="exchange">Exchange / Swap</option>
               <option value="rent">Rent</option>
-              <option value="free">Giveaway / Free</option>
+              <option value="free">Giveaway</option>
             </select>
           </div>
         </div>
 
-        {/* MEDIA SECTION */}
+        {/* --- Media --- */}
         <div className="space-y-4">
-          <h3 className="text-lg font-bold">Book Media</h3>
+          <h3 className="text-lg font-bold border-b pb-2">Visuals</h3>
           <div className="flex flex-col md:flex-row gap-8 items-start">
             <div className="form-control">
-              <span className="label-text font-semibold mb-2 text-center">Main Cover</span>
-              <div className="w-40 h-56 border-2 border-dashed rounded-lg flex flex-col items-center justify-center overflow-hidden relative bg-base-200">
+              <span className="label-text font-semibold mb-2 block">Cover Photo</span>
+              <div className="w-40 h-56 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center overflow-hidden relative bg-base-200 hover:border-primary transition-colors">
                 {coverPreview ? (
                   <img src={coverPreview} className="object-cover w-full h-full" alt="Cover" />
                 ) : (
-                  <span className="text-xs text-center p-2 opacity-50">No Cover Selected</span>
+                  <span className="text-xs text-center opacity-40">Click to upload</span>
                 )}
                 <input type="file" onChange={handleCoverChange} className="absolute inset-0 opacity-0 cursor-pointer" />
               </div>
             </div>
 
             <div className="flex-1 w-full">
-              <span className="label-text font-semibold mb-2 block">Real Book Gallery (Min 1, Max 4)</span>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-2 border-dashed p-4 rounded-xl min-h-[150px]">
+              <span className="label-text font-semibold mb-2 block">Gallery (Photos of your actual book)</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-2 border-dashed p-4 rounded-2xl min-h-[150px] bg-base-200/30">
                 {galleryPreviews.map((src, i) => (
-                  <div key={i} className="aspect-square rounded-lg overflow-hidden border">
+                  <div key={i} className="aspect-square rounded-xl overflow-hidden border-2 border-white shadow-sm">
                     <img src={src} className="object-cover w-full h-full" alt="Preview" />
                   </div>
                 ))}
                 {galleryFiles.length < 4 && (
-                  <label className="aspect-square flex flex-col items-center justify-center bg-base-200 rounded-lg cursor-pointer hover:bg-base-300 border border-base-300">
+                  <label className="aspect-square flex flex-col items-center justify-center bg-base-100 rounded-xl cursor-pointer hover:bg-base-300 border border-base-300">
                     <span className="text-2xl">+</span>
-                    <span className="text-[10px]">Add Photo</span>
                     <input type="file" multiple onChange={handleGalleryChange} className="hidden" />
                   </label>
                 )}
@@ -283,17 +289,21 @@ const BookListingForm = () => {
         </div>
 
         <div className="form-control">
-          <label className="label-text font-semibold">About Book / Description</label>
+          <label className="label-text font-semibold">Description</label>
           <textarea 
             name="aboutBook" 
-            className="textarea textarea-bordered h-32" 
-            placeholder="Tell buyers about the edition, highlighting, or any defects..."
+            className="textarea textarea-bordered h-28" 
+            placeholder="Describe the condition, edition, or any extra details..."
             value={formData.aboutBook}
             onChange={handleChange}
           />
         </div>
 
-        <button type="submit" disabled={loading} className="btn btn-secondary w-full text-lg">
+        <button 
+          type="submit" 
+          disabled={loading || mutation.isPending} 
+          className="btn btn-primary btn-block text-lg shadow-xl"
+        >
           {loading ? <span className="loading loading-spinner"></span> : "List Book Now"}
         </button>
       </form>

@@ -2,6 +2,7 @@ import { lazy } from "react";
 import { createBrowserRouter, Outlet } from "react-router";
 import App from "../App.jsx";
 
+
 const SearchPage = lazy(() => import("../pages/SearchPage.jsx"));
 const OtherUserProfile = lazy(() => import("../pages/OtherUserProfile.jsx"));
 const MessageContainer = lazy(
@@ -10,6 +11,7 @@ const MessageContainer = lazy(
 const AuthGuard = lazy(() => import("./guards/AuthGuard.jsx"));
 const GuestGuard = lazy(() => import("./guards/GuestGuard.jsx"));
 const AdminGuard = lazy(() => import("./guards/AdminGuard.jsx"));
+const ShopGuard = lazy(() => import("./guards/ShopGuard.jsx"));
 const OnboardingGuard = lazy(() => import("./guards/OnboardingGuard.jsx"));
 const EmailVerifyGuard = lazy(() => import("./guards/EmailVerifyGuard.jsx"));
 const LandingPage = lazy(() => import("../pages/LandingPage.jsx"));
@@ -82,11 +84,16 @@ const router = createBrowserRouter([
           },
           { path: "/search", element: <SearchPage /> },
           { path: "/profile", element: <Profile /> },
-          { path: "/shop-dashboard", element: <ShopDashboard /> }, 
           { path: "/admin", element: <AdminDashboard /> },
           { path: "/profile/:id", element: <OtherUserProfile /> },
           { path: "/listbook", element: <ListBook /> },
           { path: "/update-profile", element: <UpdateProfile /> },
+          {
+            element: <ShopGuard />, 
+            children: [
+              { path: "/shop-dashboard", element: <ShopDashboard /> },
+            ]
+          },
         ],
       },
 
@@ -95,9 +102,7 @@ const router = createBrowserRouter([
         element: (
           <AuthGuard>
             <EmailVerifyGuard>
-              <OnboardingGuard>
                 <ProfileCompletion />
-              </OnboardingGuard>
             </EmailVerifyGuard>
           </AuthGuard>
         ),
