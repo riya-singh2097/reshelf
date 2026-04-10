@@ -14,7 +14,17 @@ const AdminDashboard = () => {
     refetchInterval: 60000, // Refresh stats every minute
   });
 
-  if (isLoading) {
+  // --- NEW: Fetch actual reports ---
+  const { data: reportsData, isLoading: reportsLoading } = useQuery({
+    queryKey: ["adminReports"],
+    queryFn: async () => {
+      const res = await api.get("/admin/reports");
+      return res.data.reports;
+    },
+    refetchInterval: 30000, // Refresh reports every 30 seconds
+  });
+
+  if (isLoading || reportsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="animate-spin text-primary" size={48} />
@@ -75,44 +85,56 @@ const AdminDashboard = () => {
             Flagged Content
           </h2>
           <span className="badge badge-error text-white font-bold p-3">
-            {data.reportedBooks} Pending Actions
+            {reportsData?.length || 0} Pending Actions
           </span>
         </div>
         
-        {/* Placeholder Table - You can make this dynamic by adding a /api/admin/reports route */}
         <div className="overflow-x-auto">
           <table className="table w-full">
             <thead>
               <tr className="bg-base-300/30">
-                <th className="uppercase text-[10px] tracking-widest">Listing</th>
-                <th className="uppercase text-[10px] tracking-widest">Owner Type</th>
-                <th className="uppercase text-[10px] tracking-widest">Reason</th>
+                <th className="uppercase text-[10px] tracking-widest">Target User</th>
+                <th className="uppercase text-[10px] tracking-widest">Report Type</th>
+                <th className="uppercase text-[10px] tracking-widest">Reason & Details</th>
                 <th className="text-right uppercase text-[10px] tracking-widest">Action</th>
               </tr>
             </thead>
             <tbody>
-              {data.reportedBooks === 0 ? (
+              {reportsData?.length === 0 ? (
                 <tr>
                   <td colSpan="4" className="text-center py-10 opacity-50 italic">No flagged content found.</td>
                 </tr>
               ) : (
-                <tr>
-                  <td>
-                    <div className="flex items-center gap-3">
-                      <div className="mask mask-squircle w-10 h-10 bg-base-300"></div>
-                      <div>
-                        <div className="font-bold">Sample Reported Book</div>
-                        <div className="text-xs opacity-50 uppercase font-black">Reported by: System</div>
+                reportsData.map((report) => (
+                  <tr key={report._id} className="hover:bg-base-300/20 transition-colors">
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className="mask mask-squircle w-10 h-10 bg-base-300 flex items-center justify-center font-bold text-primary">
+                          {report.targetUserId?.username?.charAt(0).toUpperCase() || "?"}
+                        </div>
+                        <div>
+                          <div className="font-bold">{report.targetUserId?.username || "Unknown"}</div>
+                          <div className="text-[10px] opacity-50 uppercase font-black">
+                            By: {report.reporterId?.username || "Anonymous"}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td><span className="badge badge-outline badge-sm uppercase font-bold">User</span></td>
-                  <td><span className="text-error font-bold text-xs uppercase">Policy Violation</span></td>
-                  <td className="text-right">
-                    <button className="btn btn-ghost btn-sm text-primary"><ExternalLink size={16}/></button>
-                    <button className="btn btn-ghost btn-sm text-error"><Trash2 size={16}/></button>
-                  </td>
-                </tr>
+                    </td>
+                    <td><span className="badge badge-outline badge-sm uppercase font-bold text-[10px]">User Report</span></td>
+                    <td>
+                      <div className="flex flex-col">
+                        <span className="text-error font-bold text-[11px] uppercase">{report.reason}</span>
+                        <span className="text-[10px] opacity-70 italic truncate max-w-xs">
+                          {report.description || "No additional details."}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="text-right">
+                      <button className="btn btn-ghost btn-sm text-primary"><ExternalLink size={16}/></button>
+                      <button className="btn btn-ghost btn-sm text-error"><Trash2 size={16}/></button>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

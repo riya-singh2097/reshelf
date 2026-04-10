@@ -23,6 +23,7 @@ const Dashboard = lazy(() => import("../pages/Dashboard.jsx"));
 const Profile = lazy(() => import("../pages/Profile.jsx"));
 const ProfileCompletion = lazy(() => import("../pages/ProfileCompletion.jsx"));
 const ListBook = lazy(() => import("../pages/ListBook.jsx"));
+const ReportUser = lazy(() => import("../pages/ReportUser.jsx"));
 const UpdateProfile = lazy(() => import("../pages/UpdateProfile.jsx"));
 const VerifyEmailInstructionsPage = lazy(
   () => import("../components/VerifyEmailInstructionsPage.jsx"),
@@ -87,6 +88,7 @@ const router = createBrowserRouter([
           { path: "/admin", element: <AdminDashboard /> },
           { path: "/profile/:id", element: <OtherUserProfile /> },
           { path: "/listbook", element: <ListBook /> },
+          { path: "/report/:id", element: <ReportUser /> },
           { path: "/update-profile", element: <UpdateProfile /> },
           {
             element: <ShopGuard />, 

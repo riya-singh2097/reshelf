@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Globe, Instagram, Mail, Twitter } from "lucide-react";
+import { Star, Plus } from "lucide-react"; 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import BookCard from "../components/BookCard.jsx";
@@ -13,211 +13,142 @@ import { useUserContext } from "../context/UserContext.jsx";
 import { toast } from "react-toastify";
 
 const Profile = () => {
-  const { user, logout } = useFirebase();
+  const { logout } = useFirebase();
   const { dbUser } = useUserContext();
   const [selectedBook, setSelectedBook] = useState(null);
   const queryClient = useQueryClient();
-
-  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
 
-  // 1. Safe Destructuring
-  const {
-    aboutMe = "No bio provided.",
-    email,
-    username = "Anonymous User",
-    profilePhotoURL,
-    address = {},
-    socialLinks = {},
-  } = dbUser || {};
+  // 1. Fetch Rating & Review Data
+  const { data: ratingData, status: ratingStatus } = useQuery({
+    queryKey: ["userRating", dbUser?._id],
+    queryFn: async () => {
+      const res = await api.get(`/user/reviews/${dbUser._id}`);
+      return res.data;
+    },
+    enabled: !!dbUser?._id,
+  });
 
-  const { street, city, state, pincode, country } = address;
-  const { instagram, website, twitter } = socialLinks;
-
-  const {
-    data: booksData,
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
+  // 2. Fetch User's Books
+  const { data: booksData, isLoading: booksLoading } = useQuery({
     queryKey: ["booksByCurrentUser"],
     queryFn: async () => {
       const response = await api.get("/book/currentUser");
       return response?.data?.data || response?.data || [];
     },
-    enabled: !!user,
+    enabled: !!dbUser?._id,
   });
 
-  // 3. Safety Guard: Ensure 'books' is ALWAYS an array before calling .slice
-  const books = Array.isArray(booksData) ? booksData : [];
-
-  // 4. Pagination Logic (Now safe)
-  const indexOfLastBook = currentPage * itemsPerPage;
-  const indexOfFirstBook = indexOfLastBook - itemsPerPage;
-  const currentBooks = books.slice(indexOfFirstBook, indexOfLastBook);
-  const totalPages = Math.ceil(books.length / itemsPerPage);
-
-  // Delete mutation
+  // 3. Delete Mutation
   const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      return api.delete(`/book/${id}`);
-    },
+    mutationFn: async (id) => api.delete(`/book/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["booksByCurrentUser"] });
       toast.success("Book deleted successfully!");
       setSelectedBook(null);
     },
-    onError: (error) => {
-      toast.error(`Delete failed: ${error.response?.data?.message || error.message}`);
-    }
   });
 
-  const deleteBook = (id) => {
-    if (window.confirm("Are you sure you want to delete this book?")) {
-      deleteMutation.mutate(id);
-    }
+  const deleteBook = (id) => deleteMutation.mutate(id);
+
+  if (!dbUser) return <Loading />;
+
+  // --- DATA NORMALIZATION ---
+  const books = Array.isArray(booksData) ? booksData : [];
+  const reviewsList = ratingData?.reviews || [];
+  
+  // Logical Fallback: Use API data first, then dbUser context, then 0
+  const stats = {
+    averageRating: ratingData?.stats?.averageRating ?? dbUser?.averageRating ?? 0,
+    reviewCount: ratingData?.stats?.reviewCount ?? dbUser?.reviewCount ?? 0
   };
 
-  if (!dbUser && !isError) return <Loading />;
+  const currentBooks = books.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <>
-      <section className="p-8">
-        <div className="breadcrumbs text-sm mb-4">
-          <ul>
-            <li><Link to="/dashboard">Dashboard</Link></li>
-            <li className="text-primary font-semibold">Profile</li>
-          </ul>
+    <section className="p-8 max-w-7xl mx-auto min-h-screen">
+      <div className="flex md:flex-row flex-col gap-8">
+        
+        {/* LEFT: Books Grid */}
+        <div className="flex-1 order-2 md:order-1">
+          <h1 className="text-2xl font-bold border-b pb-4 mb-6">Books Listed ({books.length})</h1>
+          {booksLoading ? (
+            <div className="flex justify-center p-10"><span className="loading loading-spinner loading-lg text-primary"></span></div>
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+              {currentBooks.length > 0 ? (
+                currentBooks.map((book) => (
+                  <BookCard key={book._id} book={book} onOpen={() => setSelectedBook(book)} />
+                ))
+              ) : (
+                <div className="col-span-full py-20 text-center opacity-40 italic">No books listed yet.</div>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="flex md:justify-between md:flex-row flex-col md:p-4 gap-8">
+        {/* RIGHT: Sidebar */}
+        <div className="md:w-80 w-full order-1 md:order-2 space-y-6">
+          <Link to="/listbook" className="btn btn-primary w-full shadow-lg"><Plus size={18}/> List a Book</Link>
           
-          {/* LEFT CONTAINER: Books Grid */}
-          <div className="left-container w-full max-md:order-2">
-            <h1 className="text-center mb-8 text-2xl font-bold border-b pb-2 border-base-300">
-              Books Listed ({books.length})
-            </h1>
-
-            {isError && (
-              <div className="alert alert-error mb-4">
-                <span>{error?.message || "Failed to load books."}</span>
+          <div className="card bg-base-100 shadow-xl border border-base-200 p-6 items-center text-center">
+            <div className="avatar mb-4">
+              <div className="w-24 h-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2 overflow-hidden">
+                <img src={dbUser?.profilePhotoURL || "https://i.pinimg.com/736x/79/e8/9f/79e89fdc173fed118526a1d32e1aac61.jpg"} alt="Profile" className="object-cover" />
               </div>
-            )}
-
-            {isLoading ? (
-              <Loading />
-            ) : (
-              <div className="flex flex-col items-center">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
-                  {currentBooks.map((book) => (
-                    <BookCard
-                      key={book._id}
-                      book={book}
-                      onOpen={() => setSelectedBook(book)}
-                    />
-                  ))}
-                </div>
-
-                {books.length < 1 && (
-                  <div className="text-center py-20 opacity-50 italic">
-                    You haven't listed any books yet.
-                  </div>
-                )}
-
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <div className="join mt-10">
-                    <button
-                      className="join-item btn btn-sm"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage((prev) => prev - 1)}
-                    >
-                      «
-                    </button>
-                    <button className="join-item btn btn-sm no-animation cursor-default">
-                      Page {currentPage} of {totalPages}
-                    </button>
-                    <button
-                      className="join-item btn btn-sm"
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage((prev) => prev + 1)}
-                    >
-                      »
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* RIGHT SIDEBAR: User Info */}
-          <div className="card bg-base-100 shadow-xl border border-base-300 p-6 flex flex-col md:w-1/3 w-full max-md:order-1 h-fit">
-            <Link to="/listbook" className="btn btn-primary font-bold text-lg mb-8 shadow-md">
-              + List a Book
-            </Link>
-
-            <div className="flex flex-col items-center">
-              <div className="avatar">
-                <div className="w-32 h-32 rounded-full ring-primary ring-offset-base-100 ring-2 ring-offset-2 overflow-hidden">
-                  <img
-                    src={profilePhotoURL || "https://i.pinimg.com/736x/79/e8/9f/79e89fdc173fed118526a1d32e1aac61.jpg"}
-                    alt="Profile"
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-              <h2 className="mt-4 text-2xl font-bold text-center">{username}</h2>
-              <div className="badge badge-outline mt-2 uppercase font-bold tracking-widest">{dbUser?.role}</div>
+            </div>
+            
+            <h2 className="text-xl font-bold">{dbUser?.username}</h2>
+            
+            {/* RATING DISPLAY */}
+            <div className="flex items-center gap-2 mt-2 bg-orange-50 px-3 py-1 rounded-full border border-orange-100 shadow-sm">
+              <Star size={14} className="text-orange-500 fill-orange-500" />
+              <span className="font-bold text-sm text-orange-700">
+                {Number(stats.averageRating).toFixed(1)}
+              </span>
+              <span className="text-[10px] opacity-60 font-black uppercase tracking-tighter">
+                ({stats.reviewCount} reviews)
+              </span>
             </div>
 
-            <div className="divider">Details</div>
-
-            <div className="space-y-3 text-sm">
-              <div>
-                <span className="font-bold block text-xs opacity-60 uppercase">Address</span>
-                <p>{street}, {city}, {state} {pincode}</p>
-                <p className="font-semibold">{country}</p>
+            <div className="divider w-full text-[10px] uppercase opacity-50 font-bold">Details</div>
+            <div className="text-left w-full text-xs space-y-2">
+              <p><strong>Email:</strong> {dbUser?.email}</p>
+              <p><strong>City:</strong> {dbUser?.address?.city || "Not set"}</p>
+              <div className="pt-2">
+                <p className="font-bold text-[10px] uppercase opacity-50 mb-1">About</p>
+                <p className="italic opacity-80 leading-relaxed line-clamp-3">"{dbUser?.aboutMe || "No bio available."}"</p>
               </div>
-
-              <div>
-                <span className="font-bold block text-xs opacity-60 uppercase">Contact</span>
-                <div className="flex items-center gap-2 mt-1">
-                  <Mail size={16} className="text-primary" /> {email}
-                </div>
-                
-                {website && (
-                  <div className="flex items-center gap-2 mt-1">
-                    <Globe size={16} className="text-primary" />
-                    <a href={website} target="_blank" rel="noreferrer" className="link link-hover text-info">{website}</a>
-                  </div>
-                )}
-
-                <div className="flex gap-4 mt-3">
-                  {twitter && (
-                    <a href={`https://x.com/${twitter}`} target="_blank" rel="noreferrer" className="hover:text-primary transition-colors">
-                      <Twitter size={20} />
-                    </a>
-                  )}
-                  {instagram && (
-                    <a href={`https://instagram.com/${instagram}`} target="_blank" rel="noreferrer" className="hover:text-primary transition-colors">
-                      <Instagram size={20} />
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              <div className="divider">About Me</div>
-              <p className="italic text-base-content/80 leading-relaxed">"{aboutMe}"</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-10">
-              <Link to="/update-profile" className="btn btn-outline btn-info btn-sm">Edit Profile</Link>
-              <button onClick={logout} className="btn btn-outline btn-error btn-sm">Log Out</button>
+            <div className="divider w-full text-[10px] uppercase opacity-50 font-bold">Recent Reviews</div>
+            <div className="w-full space-y-3 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+              {reviewsList.length > 0 ? (
+                reviewsList.map((rev) => (
+                  <div key={rev._id} className="bg-base-200 p-2 rounded text-left border border-base-300 shadow-sm">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[10px] font-bold text-primary">@{rev.reviewerId?.username || "anonymous"}</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] font-bold">{rev.rating}</span>
+                        <Star size={8} fill="orange" className="text-orange-500"/>
+                      </div>
+                    </div>
+                    <p className="text-[10px] opacity-80 italic leading-tight">"{rev.note || "No comment"}"</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-[10px] opacity-40 py-4 italic text-center uppercase">No reviews yet</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 w-full mt-8">
+              <Link to="/update-profile" className="btn btn-outline btn-sm">Edit</Link>
+              <button onClick={logout} className="btn btn-outline btn-error btn-sm">Logout</button>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
       {selectedBook && (
         <BookModal 
@@ -226,7 +157,7 @@ const Profile = () => {
           onDelete={() => deleteBook(selectedBook._id)} 
         />
       )}
-    </>
+    </section>
   );
 };
 
