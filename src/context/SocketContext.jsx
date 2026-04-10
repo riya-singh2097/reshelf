@@ -18,7 +18,7 @@ export const SocketContextProvider = ({ children }) => {
         if (dbUser) {
             // Create socket connection
             // Pass the userId in the query so the backend can map it
-            const socketInstance = io("http://localhost:3000", {
+            const socketInstance = io(import.meta.env.VITE_API_URL, {
                 query: {
                     userId: dbUser._id,
                 },
